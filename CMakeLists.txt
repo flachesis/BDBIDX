@@ -1,11 +1,13 @@
 project (BDBIDX)
 cmake_minimum_required(VERSION 2.8)
 
-include_directories( ${PROJECT_SOURCE_DIR} /usr/local/include)
+add_subdirectory( BehaviorDB )
+
+include_directories( ${PROJECT_SOURCE_DIR} /usr/local/include BehaviorDB)
 link_directories(${PROJECT_SOURCE_DIR})
 
 add_library(bdbidx BDBIDX.cpp)
 
-add_executable (bdb_test ${PROJECT_SOURCE_DIR}/main.cpp)
-target_link_libraries(bdb_test bdbidx bdb)
+add_executable (idx_test ${PROJECT_SOURCE_DIR}/main.cpp)
+target_link_libraries(idx_test bdbidx bdb)
 

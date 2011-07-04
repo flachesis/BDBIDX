@@ -1,0 +1,3 @@
+[submodule "BehaviorDB"]
+	path = BehaviorDB
+	url = git://github.com/yangacer/BehaviorDB.git
