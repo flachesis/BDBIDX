@@ -59,7 +59,7 @@ void BDBIDX::init_bdbidx(const char *idx_dir, size_t key_hashing_table_size){
 }
 
 bool BDBIDX::put_key(const char *key, size_t key_len, BDB::AddrType addr){
-    size_t idx_chunk_num = this->BKDRHash(key, key_len) / this->key_hashing_table_size;
+    size_t idx_chunk_num = this->BKDRHash(key, key_len) % this->key_hashing_table_size;
     if(this->key_hashing_table[idx_chunk_num] == -1){
         std::auto_ptr<std::stringstream> ss(new std::stringstream(std::stringstream::in | std::stringstream::out | std::stringstream::binary));
         *ss << key_len;
@@ -106,7 +106,7 @@ bool BDBIDX::put_key(const char *key, size_t key_len, BDB::AddrType addr){
 }
 
 bool BDBIDX::del_key(const char *key, size_t key_len){
-    size_t idx_chunk_num = this->BKDRHash(key, key_len) / this->key_hashing_table_size;
+    size_t idx_chunk_num = this->BKDRHash(key, key_len) % this->key_hashing_table_size;
     if(this->key_hashing_table[idx_chunk_num] == -1){
         return true;
     }
@@ -174,7 +174,7 @@ bool BDBIDX::del_key(const char *key, size_t key_len){
 }
 
 bool BDBIDX::del_key(const char *key, size_t key_len, BDB::AddrType addr){
-    size_t idx_chunk_num = this->BKDRHash(key, key_len) / this->key_hashing_table_size;
+    size_t idx_chunk_num = this->BKDRHash(key, key_len) % this->key_hashing_table_size;
     if(this->key_hashing_table[idx_chunk_num] == -1){
         return true;
     }
@@ -254,7 +254,7 @@ bool BDBIDX::del_key(const char *key, size_t key_len, BDB::AddrType addr){
 }
 
 std::set<BDB::AddrType>* BDBIDX::get_value(const char *key, size_t key_len){
-    size_t idx_chunk_num = this->BKDRHash(key, key_len) / this->key_hashing_table_size;
+    size_t idx_chunk_num = this->BKDRHash(key, key_len) % this->key_hashing_table_size;
     if(this->key_hashing_table[idx_chunk_num] == -1){
         return NULL;
     }
