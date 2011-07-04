@@ -33,7 +33,6 @@ private:
     BDB::BehaviorDB *bdb;
     BDB::AddrType *key_hashing_table;
     size_t key_hashing_table_size;
-    BDB::Config bdb_config;
     
     void init_bdbidx(const char *idx_dir, size_t key_hashing_table_size);
     std::set<BDB::AddrType>* get_key_info(const char *key, size_t key_len, std::string &rec_content);

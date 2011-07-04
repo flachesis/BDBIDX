@@ -34,9 +34,10 @@ void BDBIDX::init_bdbidx(const char *idx_dir, size_t key_hashing_table_size){
     }
     std::string idx_saving_file = this->idx_dir + "addr_idx.log";
     this->idx_saving_handle = fopen(idx_saving_file.c_str(), "a+b");
-    this->bdb_config.root_dir = this->idx_dir.c_str();
-    this->bdb_config.min_size = 32;
-    this->bdb = new BDB::BehaviorDB(this->bdb_config);
+    BDB::Config bdb_config;
+    bdb_config.root_dir = this->idx_dir.c_str();
+    bdb_config.min_size = 32;
+    this->bdb = new BDB::BehaviorDB(bdb_config);
     this->key_hashing_table_size = key_hashing_table_size;
     this->key_hashing_table = new BDB::AddrType[this->key_hashing_table_size];
     memset(this->key_hashing_table, -1, this->key_hashing_table_size);
@@ -51,7 +52,6 @@ void BDBIDX::init_bdbidx(const char *idx_dir, size_t key_hashing_table_size){
         BDB::AddrType tmp_addr = -1;
         while(pch != NULL){
             sscanf(pch, "%u,%u", &tmp_value, &tmp_addr);
-            std::cerr << tmp_value << "\t" << tmp_addr << std::endl;
             this->key_hashing_table[tmp_value] = tmp_addr;
             pch = strtok(NULL, "\n");
         }
