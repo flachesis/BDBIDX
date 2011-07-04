@@ -26,7 +26,7 @@ public:
     bool put_key(const char *key, size_t key_len, BDB::AddrType addr);
     bool del_key(const char *key, size_t key_len);
     bool del_key(const char *key, size_t key_len, BDB::AddrType addr);
-    std::set<BDB::AddrType>* get_addrs(const char *key, size_t key_len);
+    std::set<BDB::AddrType>* get_value(const char *key, size_t key_len);
 private:
     std::string idx_dir;
     FILE *idx_saving_handle;

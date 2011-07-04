@@ -253,7 +253,7 @@ bool BDBIDX::del_key(const char *key, size_t key_len, BDB::AddrType addr){
     return true;
 }
 
-std::set<BDB::AddrType>* BDBIDX::get_addrs(const char *key, size_t key_len){
+std::set<BDB::AddrType>* BDBIDX::get_value(const char *key, size_t key_len){
     size_t idx_chunk_num = this->BKDRHash(key, key_len) / this->key_hashing_table_size;
     if(this->key_hashing_table[idx_chunk_num] == -1){
         return NULL;

@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
     idx.del_key("test", 4, 2);
     idx.del_key("test", 4, 3);
     idx.del_key("test2", 5);
-    std::auto_ptr<std::set<BDB::AddrType> > addrinfo(idx.get_addrs("test", 4));
+    std::auto_ptr<std::set<BDB::AddrType> > addrinfo(idx.get_value("test", 4));
     if(addrinfo.get() == NULL){
         std::cerr << "empty" << std::endl;
         return 0;
