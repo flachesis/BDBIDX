@@ -21,13 +21,15 @@ class BDBIDX {
 public:
     BDBIDX(const char *idx_dir);
     BDBIDX(const char *idx_dir, size_t key_hashing_table_size);
-    BDBIDX(const BDBIDX& orig);
     virtual ~BDBIDX();
     bool put_key(const char *key, size_t key_len, BDB::AddrType addr);
     bool del_key(const char *key, size_t key_len);
     bool del_key(const char *key, size_t key_len, BDB::AddrType addr);
     std::set<BDB::AddrType>* get_value(const char *key, size_t key_len);
 private:
+    BDBIDX(const BDBIDX& orig);
+    BDBIDX& operator=(const BDBIDX& orig);
+
     std::string idx_dir;
     FILE *idx_saving_handle;
     BDB::BehaviorDB *bdb;
