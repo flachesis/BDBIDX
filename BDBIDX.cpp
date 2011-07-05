@@ -133,33 +133,38 @@ bool BDBIDX::put_key(const char *key, size_t key_len, BDB::AddrType addr)
 
 bool BDBIDX::del_key(const char *key, size_t key_len)
 {
+	using namespace std;
+
 	size_t idx_chunk_num = this->BKDRHash(key, key_len) % this->key_hashing_table_size;
 	if(this->key_hashing_table[idx_chunk_num] == -1){
 		return true;
 	}
-	std::auto_ptr<std::string> rec(new std::string);
+
+	auto_ptr<string> rec(new string);
 	size_t already_reading = this->bdb->get(rec.get(), -1, this->key_hashing_table[idx_chunk_num], 0);
 	if(already_reading == -1){
 		return false;
 	}
+
 	size_t tmpos1 = 0;
 	size_t tmpos2 = 0;
 	size_t tmpos3 = 0;
 	size_t tmp_value = 0;
-	std::auto_ptr<std::stringstream> ss(new std::stringstream(std::stringstream::in | std::stringstream::out | std::stringstream::binary));
-	std::string tmp_value_string = "";
-	std::auto_ptr<std::string> newrec(new std::string);
-	while((tmpos2 = rec->find(",", tmpos1)) != std::string::npos){
+	auto_ptr<stringstream> ss(new stringstream(ios::in | ios::out | ios::binary));
+	string tmp_value_string = "";
+	auto_ptr<string> newrec(new string);
+
+	while((tmpos2 = rec->find(",", tmpos1)) != string::npos){
 		tmp_value_string = rec->substr(tmpos1, tmpos2 - tmpos1);
 		ss->str(tmp_value_string);
 		ss->clear();
-		ss->seekg(0, std::ios_base::beg);
+		ss->seekg(0, ios_base::beg);
 		*ss >> tmp_value;
 		tmpos1 = tmpos2 + 1;
 		if(rec->compare(tmpos1, tmp_value, key) == 0){
 			tmpos1 += tmp_value + 1;
 			tmpos2 = rec->find("\n", tmpos1);
-			if(tmpos2 != std::string::npos){
+			if(tmpos2 != string::npos){
 				tmpos1 = tmpos2 + 1;
 				tmpos3 = tmpos1;
 			}else{
@@ -168,7 +173,7 @@ bool BDBIDX::del_key(const char *key, size_t key_len)
 		}else{
 			tmpos1 += tmp_value + 1;
 			tmpos2 = rec->find("\n", tmpos1);
-			if(tmpos2 != std::string::npos){
+			if(tmpos2 != string::npos){
 				tmpos1 = tmpos2 + 1;
 				newrec->append(*rec, tmpos3, tmpos1 - tmpos3);
 				tmpos3 = tmpos1;
@@ -181,7 +186,7 @@ bool BDBIDX::del_key(const char *key, size_t key_len)
 		tmp_value_string.clear();
 		ss->str(tmp_value_string);
 		ss->clear();
-		ss->seekp(0, std::ios_base::beg);
+		ss->seekp(0, ios_base::beg);
 		*ss << idx_chunk_num;
 		ss->write(",", 1);
 		BDB::AddrType addrtmp = -1;
@@ -201,11 +206,14 @@ bool BDBIDX::del_key(const char *key, size_t key_len)
 }
 
 bool BDBIDX::del_key(const char *key, size_t key_len, BDB::AddrType addr){
+	
+	using namespace std;
+
 	size_t idx_chunk_num = this->BKDRHash(key, key_len) % this->key_hashing_table_size;
 	if(this->key_hashing_table[idx_chunk_num] == -1){
 		return true;
 	}
-	std::auto_ptr<std::string> rec(new std::string);
+	auto_ptr<std::string> rec(new string);
 	size_t already_reading = this->bdb->get(rec.get(), -1, this->key_hashing_table[idx_chunk_num], 0);
 	if(already_reading == -1){
 		return false;
@@ -215,7 +223,7 @@ bool BDBIDX::del_key(const char *key, size_t key_len, BDB::AddrType addr){
 	size_t tmpos3 = 0;
 	size_t tmp_value = 0;
 	BDB::AddrType tmp_addr = -1;
-	std::auto_ptr<std::stringstream> ss(new std::stringstream(std::stringstream::in | std::stringstream::out | std::stringstream::binary));
+	std::auto_ptr<stringstream> ss(new stringstream(ios::in | ios::out | ios::binary));
 	std::string tmp_value_string = "";
 	std::auto_ptr<std::string> newrec(new std::string);
 	while((tmpos2 = rec->find(",", tmpos1)) != std::string::npos){
@@ -280,7 +288,8 @@ bool BDBIDX::del_key(const char *key, size_t key_len, BDB::AddrType addr){
 	return true;
 }
 
-std::set<BDB::AddrType>* BDBIDX::get_value(const char *key, size_t key_len){
+std::set<BDB::AddrType>* BDBIDX::get_value(const char *key, size_t key_len)
+{
 	size_t idx_chunk_num = this->BKDRHash(key, key_len) % this->key_hashing_table_size;
 	if(this->key_hashing_table[idx_chunk_num] == -1){
 		return NULL;
@@ -293,29 +302,34 @@ std::set<BDB::AddrType>* BDBIDX::get_value(const char *key, size_t key_len){
 	return this->get_key_info(key, key_len, *(rec));
 }
 
-std::set<BDB::AddrType>* BDBIDX::get_key_info(const char *key, size_t key_len, std::string &rec_content){
+std::set<BDB::AddrType>* 
+BDBIDX::get_key_info(const char *key, size_t key_len, std::string &rec_content)
+{
+	using namespace std;
+
 	size_t tmpos1 = 0;
 	size_t tmpos2 = 0;
 	size_t tmp_value = 0;
 	BDB::AddrType tmp_addr = -1;
-	std::auto_ptr<std::stringstream> ss(new std::stringstream(std::stringstream::in | std::stringstream::out | std::stringstream::binary));
-	std::string tmp_value_string = "";
-	std::set<BDB::AddrType> *keyinfo = new std::set<BDB::AddrType>;
-	while((tmpos2 = rec_content.find(",", tmpos1)) != std::string::npos){
+	auto_ptr<stringstream> ss(new stringstream(ios::in | ios::out | ios::binary));
+
+	string tmp_value_string = "";
+	set<BDB::AddrType> *keyinfo = new set<BDB::AddrType>;
+	while((tmpos2 = rec_content.find(",", tmpos1)) != string::npos){
 		tmp_value_string = rec_content.substr(tmpos1, tmpos2 - tmpos1);
 		ss->str(tmp_value_string);
 		ss->clear();
-		ss->seekg(0, std::ios_base::beg);
+		ss->seekg(0, ios_base::beg);
 		*ss >> tmp_value;
 		tmpos1 = tmpos2 + 1;
 		if(rec_content.compare(tmpos1, tmp_value, key, key_len) == 0){
 			tmpos1 += tmp_value + 1;
 			tmpos2 = rec_content.find("\n", tmpos1);
-			if(tmpos2 != std::string::npos){
+			if(tmpos2 != string::npos){
 				tmp_value_string = rec_content.substr(tmpos1, tmpos2 - tmpos1);
 				ss->str(tmp_value_string);
 				ss->clear();
-				ss->seekg(0, std::ios_base::beg);
+				ss->seekg(0, ios_base::beg);
 				*ss >> tmp_addr;
 				keyinfo->insert(tmp_addr);
 				tmpos1 = tmpos2 + 1;
@@ -325,7 +339,7 @@ std::set<BDB::AddrType>* BDBIDX::get_key_info(const char *key, size_t key_len, s
 		}else{
 			tmpos1 += tmp_value + 1;
 			tmpos2 = rec_content.find("\n", tmpos1);
-			if(tmpos2 != std::string::npos){
+			if(tmpos2 != string::npos){
 				tmpos1 = tmpos2 + 1;
 			}else{
 				break;
@@ -335,7 +349,8 @@ std::set<BDB::AddrType>* BDBIDX::get_key_info(const char *key, size_t key_len, s
 	return keyinfo;
 }
 
-size_t BDBIDX::BKDRHash(const char *str, size_t str_len){
+size_t BDBIDX::BKDRHash(const char *str, size_t str_len)
+{
 	size_t hash = 0;
 	size_t i = 0;
 	while (i < str_len)
