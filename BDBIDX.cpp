@@ -72,6 +72,7 @@ void BDBIDX::init_bdbidx(const char *idx_dir, size_t key_hashing_table_size){
 			this->key_hashing_table[tmp_value] = tmp_addr;
 			pch = strtok(NULL, "\n");
 		}
+		delete [] file_content;
 	}
 }
 
