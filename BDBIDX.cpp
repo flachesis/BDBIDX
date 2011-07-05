@@ -7,7 +7,10 @@
 
 
 #include <iostream>
-
+#include <memory>
+#include <sstream>
+#include <cstring>
+#include <cassert>
 #include "BDBIDX.h"
 
 BDBIDX::BDBIDX(const char *idx_dir) 
@@ -72,10 +75,17 @@ void BDBIDX::init_bdbidx(const char *idx_dir, size_t key_hashing_table_size){
 	}
 }
 
-bool BDBIDX::put_key(const char *key, size_t key_len, BDB::AddrType addr){
+bool BDBIDX::put_key(const char *key, size_t key_len, BDB::AddrType addr)
+{
+	// Yes, you can do that
+	using namespace std;
+
 	size_t idx_chunk_num = this->BKDRHash(key, key_len) % this->key_hashing_table_size;
+	
+	// TODO setup limitation of key instead
+	auto_ptr<stringstream> ss(new stringstream(ios::in | ios::out | ios::binary));
+
 	if(this->key_hashing_table[idx_chunk_num] == -1){
-		std::auto_ptr<std::stringstream> ss(new std::stringstream(std::stringstream::in | std::stringstream::out | std::stringstream::binary));
 		*ss << key_len;
 		ss->write(",", 1);
 		ss->write(key, key_len);
@@ -86,11 +96,11 @@ bool BDBIDX::put_key(const char *key, size_t key_len, BDB::AddrType addr){
 		if(this->key_hashing_table[idx_chunk_num] == -1){
 			return false;
 		}
-		std::string empty_string;
+		string empty_string;
 		empty_string.clear();
 		ss->str(empty_string);
 		ss->clear();
-		ss->seekp(0, std::ios_base::beg);
+		ss->seekp(0, ios_base::beg);
 		*ss << idx_chunk_num;
 		ss->write(",", 1);
 		*ss << this->key_hashing_table[idx_chunk_num];
@@ -99,16 +109,18 @@ bool BDBIDX::put_key(const char *key, size_t key_len, BDB::AddrType addr){
 		fflush(this->idx_saving_handle);
 		return true;
 	}
-	std::auto_ptr<std::string> rec(new std::string);
+	
+	auto_ptr<string> rec(new string);
 	size_t already_reading = this->bdb->get(rec.get(), -1, this->key_hashing_table[idx_chunk_num], 0);
 	if(already_reading == -1){
 		return false;
 	}
-	std::auto_ptr<std::set<BDB::AddrType> > keyinfo(this->get_key_info(key, key_len, *(rec)));
+	
+	auto_ptr<set<BDB::AddrType> > keyinfo(this->get_key_info(key, key_len, *(rec)));
 	if(keyinfo->find(addr) != keyinfo->end()){
 		return true;
 	}
-	std::auto_ptr<std::stringstream> ss(new std::stringstream(std::stringstream::in | std::stringstream::out | std::stringstream::binary));
+
 	*ss << key_len;
 	ss->write(",", 1);
 	ss->write(key, key_len);
@@ -119,7 +131,8 @@ bool BDBIDX::put_key(const char *key, size_t key_len, BDB::AddrType addr){
 	return true;
 }
 
-bool BDBIDX::del_key(const char *key, size_t key_len){
+bool BDBIDX::del_key(const char *key, size_t key_len)
+{
 	size_t idx_chunk_num = this->BKDRHash(key, key_len) % this->key_hashing_table_size;
 	if(this->key_hashing_table[idx_chunk_num] == -1){
 		return true;

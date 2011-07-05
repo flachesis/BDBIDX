@@ -9,10 +9,13 @@
 #define	BDBIDX_H
 
 #include <string>
-#include <sstream>
 #include <set>
-#include <memory>
-#include <cstring>
+// DO NOT include external headers that are 
+// not required by this(BDBIDX.h) header
+//
+// #include <memory>
+// #include <sstream>
+// #include <cstring>
 #include <cstdio>
 #include "common.hpp"
 #include "bdb.hpp"
