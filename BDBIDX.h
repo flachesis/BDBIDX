@@ -19,10 +19,18 @@
 #include <cstdio>
 #include "bdb/bdb.hpp"
 
+struct hashFunc 
+{
+	virtual size_t
+	operator()(char const *key, size_t len) const = 0;
+	virtual ~hashFunc(){}
+};
+
+struct default_hash;
+
 class BDBIDX {
 public:
-    BDBIDX(const char *idx_dir);
-    BDBIDX(const char *idx_dir, size_t key_hashing_table_size);
+    BDBIDX(const char *idx_dir, size_t key_hashing_table_size=50000000, hashFunc* hFn=0);
     virtual ~BDBIDX();
     bool put_key(const char *key, size_t key_len, BDB::AddrType addr);
     bool del_key(const char *key, size_t key_len);
@@ -38,9 +46,11 @@ private:
     BDB::AddrType *key_hashing_table;
     size_t key_hashing_table_size;
     
-    void init_bdbidx(const char *idx_dir, size_t key_hashing_table_size);
+    void init_bdbidx(const char *idx_dir, size_t key_hashing_table_size, hashFunc* hFn);
     std::set<BDB::AddrType>* get_key_info(const char *key, size_t key_len, std::string &rec_content);
-    size_t BKDRHash(const char *str, size_t str_len);
+    hashFunc* BKDRHash;
+    static default_hash default_hash_impl_;
+    //size_t BKDRHash(const char *str, size_t str_len);
 };
 
 #endif	/* BDBIDX_H */

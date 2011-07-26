@@ -14,16 +14,31 @@
 #include <stdexcept>
 #include "BDBIDX.h"
 
-BDBIDX::BDBIDX(const char *idx_dir) 
-: idx_dir(), idx_saving_handle(0), bdb(0), key_hashing_table(0)
+struct default_hash : hashFunc
 {
-	this->init_bdbidx(idx_dir, 50000000);
-}
+	size_t
+	operator()(char const *key, size_t len) const
+	{
+		size_t hash = 0;
+		size_t i = 0;
+		while (i < len)
+		{
+			hash = ((hash << 7) + 3) + key[i];
+			i++;
+		}
+		return hash;
+	
+	}
 
-BDBIDX::BDBIDX(const char *idx_dir, size_t key_hashing_table_size)
-: idx_dir(), idx_saving_handle(0), bdb(0), key_hashing_table(0)
+	~default_hash(){}
+};
+
+default_hash BDBIDX::default_hash_impl_;
+
+BDBIDX::BDBIDX(const char *idx_dir, size_t key_hashing_table_size, hashFunc* hFn)
+: idx_dir(), idx_saving_handle(0), bdb(0), key_hashing_table(0), BKDRHash(0)
 {
-	this->init_bdbidx(idx_dir, key_hashing_table_size);
+	this->init_bdbidx(idx_dir, key_hashing_table_size, hFn);
 }
 
 
@@ -33,7 +48,11 @@ BDBIDX::~BDBIDX() {
 	fclose(this->idx_saving_handle);
 }
 
-void BDBIDX::init_bdbidx(const char *idx_dir, size_t key_hashing_table_size){
+void BDBIDX::init_bdbidx(
+	const char *idx_dir, 
+	size_t key_hashing_table_size, 
+	hashFunc* hFn)
+{
 	this->idx_dir = idx_dir;
 	if(*(this->idx_dir.end() - 1) != '/'){
 		this->idx_dir += "/";
@@ -55,11 +74,14 @@ void BDBIDX::init_bdbidx(const char *idx_dir, size_t key_hashing_table_size){
 	bdb_config.end = key_hashing_table_size;
 	this->bdb = new BDB::BehaviorDB(bdb_config);
 	
-	// init internal data
+	// init hash table
 	this->key_hashing_table_size = key_hashing_table_size;
 	this->key_hashing_table = new BDB::AddrType[this->key_hashing_table_size];
 	assert(0 != key_hashing_table && "alloc key_hashing_table failure");
 	
+	// init hash func
+	BKDRHash = (0 == hFn) ? &default_hash_impl_ : hFn ;
+
 	// TODO: the final parameter may overflow
 	memset(this->key_hashing_table, -1, 
 		sizeof(BDB::AddrType) * this->key_hashing_table_size);
@@ -72,7 +94,7 @@ void BDBIDX::init_bdbidx(const char *idx_dir, size_t key_hashing_table_size){
 		char *file_content = new char[file_size + 1];
 		fseek(this->idx_saving_handle, 0, SEEK_SET);
 		fread(file_content, 1, file_size, this->idx_saving_handle);
-		file_content[file_size] = '\0';
+		file_content[file_size] = '\0'; 
 		char *pch = strtok(file_content, "\n");
 		size_t tmp_value;
 		BDB::AddrType tmp_addr = -1;
@@ -90,7 +112,7 @@ bool BDBIDX::put_key(const char *key, size_t key_len, BDB::AddrType addr)
 	// Yes, you can do that
 	using namespace std;
 
-	size_t idx_chunk_num = this->BKDRHash(key, key_len) % this->key_hashing_table_size;
+	size_t idx_chunk_num = (*BKDRHash)(key, key_len) % this->key_hashing_table_size;
 	
 	// TODO setup limitation of key instead
 	auto_ptr<stringstream> ss(new stringstream(ios::in | ios::out | ios::binary));
@@ -145,7 +167,7 @@ bool BDBIDX::del_key(const char *key, size_t key_len)
 {
 	using namespace std;
 
-	size_t idx_chunk_num = this->BKDRHash(key, key_len) % this->key_hashing_table_size;
+	size_t idx_chunk_num = (*BKDRHash)(key, key_len) % this->key_hashing_table_size;
 	if(this->key_hashing_table[idx_chunk_num] == -1){
 		return true;
 	}
@@ -219,7 +241,7 @@ bool BDBIDX::del_key(const char *key, size_t key_len, BDB::AddrType addr){
 	
 	using namespace std;
 
-	size_t idx_chunk_num = this->BKDRHash(key, key_len) % this->key_hashing_table_size;
+	size_t idx_chunk_num = (*BKDRHash)(key, key_len) % this->key_hashing_table_size;
 	if(this->key_hashing_table[idx_chunk_num] == -1){
 		return true;
 	}
@@ -300,7 +322,7 @@ bool BDBIDX::del_key(const char *key, size_t key_len, BDB::AddrType addr){
 
 std::set<BDB::AddrType>* BDBIDX::get_value(const char *key, size_t key_len)
 {
-	size_t idx_chunk_num = this->BKDRHash(key, key_len) % this->key_hashing_table_size;
+	size_t idx_chunk_num = (*BKDRHash)(key, key_len) % this->key_hashing_table_size;
 	if(this->key_hashing_table[idx_chunk_num] == -1){
 		return NULL;
 	}
@@ -359,6 +381,7 @@ BDBIDX::get_key_info(const char *key, size_t key_len, std::string &rec_content)
 	return keyinfo;
 }
 
+/*
 size_t BDBIDX::BKDRHash(const char *str, size_t str_len)
 {
 	size_t hash = 0;
@@ -370,4 +393,4 @@ size_t BDBIDX::BKDRHash(const char *str, size_t str_len)
 	}
 	return hash;
 }
-
+*/
