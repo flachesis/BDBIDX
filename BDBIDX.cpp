@@ -46,7 +46,11 @@ void BDBIDX::init_bdbidx(const char *idx_dir, size_t key_hashing_table_size){
 	BDB::Config bdb_config;
 	bdb_config.root_dir = this->idx_dir.c_str();
 	bdb_config.min_size = 32;
+	bdb_config.beg = 0;
+	bdb_config.end = key_hashing_table_size;
 	this->bdb = new BDB::BehaviorDB(bdb_config);
+	
+	// init internal data
 	this->key_hashing_table_size = key_hashing_table_size;
 	this->key_hashing_table = new BDB::AddrType[this->key_hashing_table_size];
 	assert(0 != key_hashing_table && "alloc key_hashing_table failure");
