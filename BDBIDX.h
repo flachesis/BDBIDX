@@ -17,8 +17,7 @@
 // #include <sstream>
 // #include <cstring>
 #include <cstdio>
-#include "common.hpp"
-#include "bdb.hpp"
+#include "bdb/bdb.hpp"
 
 class BDBIDX {
 public:

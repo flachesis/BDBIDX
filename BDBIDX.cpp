@@ -11,6 +11,7 @@
 #include <sstream>
 #include <cstring>
 #include <cassert>
+#include <stdexcept>
 #include "BDBIDX.h"
 
 BDBIDX::BDBIDX(const char *idx_dir) 
@@ -40,7 +41,11 @@ void BDBIDX::init_bdbidx(const char *idx_dir, size_t key_hashing_table_size){
 	std::string idx_saving_file = this->idx_dir + "addr_idx.log";
 
 	this->idx_saving_handle = fopen(idx_saving_file.c_str(), "a+b");
-	assert(0 != idx_saving_handle && "Can't open idx_saving_handle file");
+	if(0 == idx_saving_handle) {
+		std::string msg = "Can't open file ";
+		msg += idx_saving_file;
+		throw std::runtime_error(msg.c_str());
+	}
 	
 	// init BDB
 	BDB::Config bdb_config;

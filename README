@@ -1,1 +1,12 @@
-Here is a conflict
+#build
+git submodule init
+git submodule update
+mkdir build
+cd build
+cmake ..
+make
+
+#run test
+cd build
+mkdir tmp
+./idx_test
