@@ -320,18 +320,21 @@ bool BDBIDX::del_key(const char *key, size_t key_len, BDB::AddrType addr){
 	return true;
 }
 
-std::set<BDB::AddrType>* BDBIDX::get_value(const char *key, size_t key_len)
+size_t BDBIDX::get_value(const char *key, size_t key_len, std::set<BDB::AddrType> *addrs)
 {
 	size_t idx_chunk_num = (*BKDRHash)(key, key_len) % this->key_hashing_table_size;
 	if(this->key_hashing_table[idx_chunk_num] == -1){
-		return NULL;
+		return 0;
 	}
 	std::auto_ptr<std::string> rec(new std::string);
 	size_t already_reading = this->bdb->get(rec.get(), -1, this->key_hashing_table[idx_chunk_num], 0);
 	if(already_reading == -1){
-		return NULL;
+		return 0;
 	}
-	return this->get_key_info(key, key_len, *(rec));
+	std::set<BDB::AddrType> *tmp_addrs = this->get_key_info(key, key_len, *(rec));
+	*addrs = *tmp_addrs;
+	delete tmp_addrs;
+	return addrs->size();
 }
 
 std::set<BDB::AddrType>* 

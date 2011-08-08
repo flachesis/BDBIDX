@@ -35,7 +35,7 @@ public:
     bool put_key(const char *key, size_t key_len, BDB::AddrType addr);
     bool del_key(const char *key, size_t key_len);
     bool del_key(const char *key, size_t key_len, BDB::AddrType addr);
-    std::set<BDB::AddrType>* get_value(const char *key, size_t key_len);
+    size_t get_value(const char *key, size_t key_len, std::set<BDB::AddrType> *addrs);
 private:
     BDBIDX(const BDBIDX& orig);
     BDBIDX& operator=(const BDBIDX& orig);
