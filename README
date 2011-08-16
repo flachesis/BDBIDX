@@ -1,6 +1,7 @@
 #build
 git submodule init
 git submodule update
+git submodule foreach git pull #Optional
 mkdir build
 cd build
 cmake ..
