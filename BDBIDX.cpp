@@ -107,6 +107,22 @@ void BDBIDX::init_bdbidx(
 	}
 }
 
+bool BDBIDX::put_key(std::string key, size_t key_len, BDB::AddrType addr){
+	this->put_key(key.c_str(), key_len, addr);
+}
+
+bool BDBIDX::del_key(std::string key, size_t key_len){
+	this->del_key(key.c_str(), key_len);
+}
+
+bool BDBIDX::del_key(std::string key, size_t key_len, BDB::AddrType addr){
+	this->del_key(key.c_str(), key_len, addr);
+}
+
+size_t BDBIDX::get_value(std::string key, size_t key_len, std::set<BDB::AddrType> *addrs){
+	this->get_value(key.c_str(), key_len, addrs);
+}
+
 bool BDBIDX::put_key(const char *key, size_t key_len, BDB::AddrType addr)
 {
 	// Yes, you can do that
