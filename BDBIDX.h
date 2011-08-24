@@ -36,10 +36,13 @@ public:
     bool del_key(const char *key, size_t key_len);
     bool del_key(const char *key, size_t key_len, BDB::AddrType addr);
     size_t get_value(const char *key, size_t key_len, std::set<BDB::AddrType> *addrs);
+    bool is_in(const char *key, size_t key_len);
+
     bool put_key(std::string key, BDB::AddrType addr);
     bool del_key(std::string key);
     bool del_key(std::string key, BDB::AddrType addr);
     size_t get_value(std::string key, std::set<BDB::AddrType> *addrs);
+    bool is_in(std::string key);
 private:
     BDBIDX(const BDBIDX& orig);
     BDBIDX& operator=(const BDBIDX& orig);

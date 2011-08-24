@@ -123,6 +123,10 @@ size_t BDBIDX::get_value(std::string key, std::set<BDB::AddrType> *addrs){
 	this->get_value(key.c_str(), key.size(), addrs);
 }
 
+bool BDBIDX::is_in(std::string key){
+	return this->is_in(key.c_str(), key.size());
+}
+
 bool BDBIDX::put_key(const char *key, size_t key_len, BDB::AddrType addr)
 {
 	// Yes, you can do that
@@ -334,6 +338,18 @@ bool BDBIDX::del_key(const char *key, size_t key_len, BDB::AddrType addr){
 		this->bdb->update(*newrec, this->key_hashing_table[idx_chunk_num]);
 	}
 	return true;
+}
+
+bool BDBIDX::is_in(const char *key, size_t key_len){
+	
+	using namespace std;
+
+	auto_ptr<std::set<BDB::AddrType> > addrs(new std::set<BDB::AddrType>);
+	size_t total_rec = this->get_value(key, key_len, addrs.get());
+	if(total_rec > 0){
+		return true;
+	}
+	return false;
 }
 
 size_t BDBIDX::get_value(const char *key, size_t key_len, std::set<BDB::AddrType> *addrs)
