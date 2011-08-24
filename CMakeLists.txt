@@ -11,3 +11,7 @@ add_library(bdbidx BDBIDX.cpp)
 add_executable (idx_test ${PROJECT_SOURCE_DIR}/main.cpp)
 target_link_libraries(idx_test bdbidx bdb)
 
+install (FILES BDBIDX.h DESTINATION include/BDBIDX)
+install (TARGETS bdbidx DESTINATION lib EXPORT bdbidx-targets )
+install (EXPORT bdbidx-targets DESTINATION lib)
+
