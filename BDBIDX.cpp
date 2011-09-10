@@ -123,6 +123,10 @@ size_t BDBIDX::get_value(std::string key, std::set<BDB::AddrType> *addrs){
 	this->get_value(key.c_str(), key.size(), addrs);
 }
 
+size_t BDBIDX::get_pool(std::string key, boost::unordered_multimap<std::string, BDB::AddrType> *addrs){
+	this->get_pool(key.c_str(), key.size(), addrs);
+}
+
 bool BDBIDX::is_in(std::string key){
 	return this->is_in(key.c_str(), key.size());
 }
@@ -367,6 +371,59 @@ size_t BDBIDX::get_value(const char *key, size_t key_len, std::set<BDB::AddrType
 	*addrs = *tmp_addrs;
 	delete tmp_addrs;
 	return addrs->size();
+}
+
+size_t BDBIDX::get_pool(const char *key, size_t key_len, boost::unordered_multimap<std::string, BDB::AddrType> *addrs){
+	size_t idx_chunk_num = (*BKDRHash)(key, key_len) % this->key_hashing_table_size;
+	if(this->key_hashing_table[idx_chunk_num] == -1){
+		return 0;
+	}
+	std::auto_ptr<std::string> rec(new std::string);
+	size_t already_reading = this->bdb->get(rec.get(), -1, this->key_hashing_table[idx_chunk_num], 0);
+	if(already_reading == -1){
+		return 0;
+	}
+	boost::unordered_multimap<std::string, BDB::AddrType> *tmp_addrs = this->get_key_info(*(rec));
+	*addrs = *tmp_addrs;
+	delete tmp_addrs;
+	return addrs->size();
+}
+
+boost::unordered_multimap<std::string, BDB::AddrType>* BDBIDX::get_key_info(std::string &rec_content){
+
+	using namespace std;
+
+	size_t tmpos1 = 0;
+	size_t tmpos2 = 0;
+	size_t tmp_value = 0;
+	BDB::AddrType tmp_addr = -1;
+	auto_ptr<stringstream> ss(new stringstream(ios::in | ios::out | ios::binary));
+	std::string key;
+	string tmp_value_string = "";
+	boost::unordered_multimap<std::string, BDB::AddrType> *keyinfo = new boost::unordered_multimap<std::string, BDB::AddrType>;
+	while((tmpos2 = rec_content.find(",", tmpos1)) != string::npos){
+		tmp_value_string = rec_content.substr(tmpos1, tmpos2 - tmpos1);
+		ss->str(tmp_value_string);
+		ss->clear();
+		ss->seekg(0, ios_base::beg);
+		*ss >> tmp_value;
+		tmpos1 = tmpos2 + 1;
+		key = rec_content.substr(tmpos1, tmp_value);
+		tmpos1 += tmp_value + 1;
+		tmpos2 = rec_content.find("\n", tmpos1);
+		if(tmpos2 != string::npos){
+			tmp_value_string = rec_content.substr(tmpos1, tmpos2 - tmpos1);
+			ss->str(tmp_value_string);
+			ss->clear();
+			ss->seekg(0, ios_base::beg);
+			*ss >> tmp_addr;
+			keyinfo->insert(std::pair<std::string, BDB::AddrType>(key, tmp_addr));
+			tmpos1 = tmpos2 + 1;
+		}else{
+			break;
+		}
+	}
+	return keyinfo;
 }
 
 std::set<BDB::AddrType>* 

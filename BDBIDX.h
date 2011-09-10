@@ -10,6 +10,7 @@
 
 #include <string>
 #include <set>
+#include <boost/unordered_map.hpp>
 // DO NOT include external headers that are 
 // not required by this(BDBIDX.h) header
 //
@@ -36,12 +37,14 @@ public:
     bool del_key(const char *key, size_t key_len);
     bool del_key(const char *key, size_t key_len, BDB::AddrType addr);
     size_t get_value(const char *key, size_t key_len, std::set<BDB::AddrType> *addrs);
+    size_t get_pool(const char *key, size_t key_len, boost::unordered_multimap<std::string, BDB::AddrType> *addrs);
     bool is_in(const char *key, size_t key_len);
 
     bool put_key(std::string key, BDB::AddrType addr);
     bool del_key(std::string key);
     bool del_key(std::string key, BDB::AddrType addr);
     size_t get_value(std::string key, std::set<BDB::AddrType> *addrs);
+    size_t get_pool(std::string key, boost::unordered_multimap<std::string, BDB::AddrType> *addrs);
     bool is_in(std::string key);
 private:
     BDBIDX(const BDBIDX& orig);
@@ -55,6 +58,7 @@ private:
     
     void init_bdbidx(const char *idx_dir, size_t key_hashing_table_size, hashFunc* hFn);
     std::set<BDB::AddrType>* get_key_info(const char *key, size_t key_len, std::string &rec_content);
+    boost::unordered_multimap<std::string, BDB::AddrType>* get_key_info(std::string &rec_content);
     hashFunc* BKDRHash;
     static default_hash default_hash_impl_;
     //size_t BKDRHash(const char *str, size_t str_len);
