@@ -57,7 +57,7 @@ private:
     size_t key_hashing_table_size;
     
     void init_bdbidx(const char *idx_dir, size_t key_hashing_table_size, hashFunc* hFn);
-    std::set<BDB::AddrType>* get_key_info(const char *key, size_t key_len, std::string &rec_content);
+    std::set<BDB::AddrType>* get_key_info(const char *key, size_t key_len, std::string const &rec_content);
     boost::unordered_multimap<std::string, BDB::AddrType>* get_key_info(std::string &rec_content);
     hashFunc* BKDRHash;
     static default_hash default_hash_impl_;

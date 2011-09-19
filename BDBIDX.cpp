@@ -12,7 +12,17 @@
 #include <cstring>
 #include <cassert>
 #include <stdexcept>
+
+#include "boost/lexical_cast.hpp"
+#include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/newline.hpp>
+#include <boost/tokenizer.hpp>
+
 #include "BDBIDX.h"
+
+#define MAX_STR_LEN 1048576
 
 struct default_hash : hashFunc
 {
@@ -135,56 +145,57 @@ bool BDBIDX::put_key(const char *key, size_t key_len, BDB::AddrType addr)
 {
 	// Yes, you can do that
 	using namespace std;
+    using boost::lexical_cast;
+    using BDB::AddrType;
 
-	size_t idx_chunk_num = (*BKDRHash)(key, key_len) % this->key_hashing_table_size;
+    assert(key_len <= MAX_STR_LEN && "Key length exceeds maximum length.");
+
+	size_t idx_chunk_num = (*BKDRHash)(key, key_len) % key_hashing_table_size;
 	
-	// TODO setup limitation of key instead
-	auto_ptr<stringstream> ss(new stringstream(ios::in | ios::out | ios::binary));
-
+    string buf;
+    
 	if(this->key_hashing_table[idx_chunk_num] == -1){
-		*ss << key_len;
-		ss->write(",", 1);
-		ss->write(key, key_len);
-		ss->write(",", 1);
-		*ss << addr;
-		ss->write("\n", 1);
-		this->key_hashing_table[idx_chunk_num] = this->bdb->put(ss->str());
-		if(this->key_hashing_table[idx_chunk_num] == -1){
-			return false;
-		}
-		string empty_string;
-		empty_string.clear();
-		ss->str(empty_string);
-		ss->clear();
-		ss->seekp(0, ios_base::beg);
-		*ss << idx_chunk_num;
-		ss->write(",", 1);
-		*ss << this->key_hashing_table[idx_chunk_num];
-		ss->write("\n", 1);
-		fwrite(ss->str().c_str(), 1, ss->str().size(), this->idx_saving_handle);
-		fflush(this->idx_saving_handle);
-		return true;
-	}
-	
-	auto_ptr<string> rec(new string);
-	size_t already_reading = this->bdb->get(rec.get(), -1, this->key_hashing_table[idx_chunk_num], 0);
-	if(already_reading == -1){
-		return false;
-	}
-	
-	auto_ptr<set<BDB::AddrType> > keyinfo(this->get_key_info(key, key_len, *(rec)));
-	if(keyinfo->find(addr) != keyinfo->end()){
-		return true;
-	}
+		
+        buf = lexical_cast<string>(key_len);
+        buf += ",";
+        buf.append(key, key_len);
+        buf += ",";
+        buf += lexical_cast<string>(addr);
+        buf += "\n";
+        
+		key_hashing_table[idx_chunk_num] = bdb->put(buf);
 
-	*ss << key_len;
-	ss->write(",", 1);
-	ss->write(key, key_len);
-	ss->write(",", 1);
-	*ss << addr;
-	ss->write("\n", 1);
-	this->bdb->put(ss->str(), this->key_hashing_table[idx_chunk_num], -1);
-	return true;
+		if(-1 == key_hashing_table[idx_chunk_num])
+			return false;
+		
+        buf = lexical_cast<string>(idx_chunk_num);
+        buf += ",";
+        buf += lexical_cast<string>(key_hashing_table[idx_chunk_num]);
+        buf += "\n";
+        
+        fwrite(buf.c_str(), 1, buf.size(), idx_saving_handle);
+		fflush(idx_saving_handle);
+		return true;
+	}
+	
+	if(-1 == bdb->get(&buf, -1, key_hashing_table[idx_chunk_num], 0))
+		return false;
+	
+	
+	auto_ptr<set<BDB::AddrType> > keyinfo( get_key_info(key, key_len, buf) );
+	if(keyinfo->find(addr) != keyinfo->end())
+		return true;
+	
+    
+    buf = lexical_cast<string>(key_len);
+    buf += ",";
+    buf.append(key, key_len);
+    buf += ",";
+    buf += lexical_cast<string>(addr);
+    buf += "\n";
+	bdb->put(buf, key_hashing_table[idx_chunk_num], BDB::npos);
+    
+   	return true;
 }
 
 bool BDBIDX::del_key(const char *key, size_t key_len)
@@ -358,16 +369,18 @@ bool BDBIDX::is_in(const char *key, size_t key_len){
 
 size_t BDBIDX::get_value(const char *key, size_t key_len, std::set<BDB::AddrType> *addrs)
 {
-	size_t idx_chunk_num = (*BKDRHash)(key, key_len) % this->key_hashing_table_size;
-	if(this->key_hashing_table[idx_chunk_num] == -1){
+    assert(0 != addrs && "Null parameter");
+
+	size_t idx_chunk_num = (*BKDRHash)(key, key_len) % key_hashing_table_size;
+	if(key_hashing_table[idx_chunk_num] == -1){
 		return 0;
 	}
 	std::auto_ptr<std::string> rec(new std::string);
-	size_t already_reading = this->bdb->get(rec.get(), -1, this->key_hashing_table[idx_chunk_num], 0);
+	size_t already_reading = bdb->get(rec.get(), -1, key_hashing_table[idx_chunk_num], 0);
 	if(already_reading == -1){
 		return 0;
 	}
-	std::set<BDB::AddrType> *tmp_addrs = this->get_key_info(key, key_len, *(rec));
+	std::set<BDB::AddrType> *tmp_addrs = get_key_info(key, key_len, *(rec));
 	*addrs = *tmp_addrs;
 	delete tmp_addrs;
 	return addrs->size();
@@ -389,7 +402,9 @@ size_t BDBIDX::get_pool(const char *key, size_t key_len, boost::unordered_multim
 	return addrs->size();
 }
 
-boost::unordered_multimap<std::string, BDB::AddrType>* BDBIDX::get_key_info(std::string &rec_content){
+boost::unordered_multimap<std::string, BDB::AddrType>* 
+BDBIDX::get_key_info(std::string &rec_content)
+{
 
 	using namespace std;
 
@@ -427,25 +442,68 @@ boost::unordered_multimap<std::string, BDB::AddrType>* BDBIDX::get_key_info(std:
 }
 
 std::set<BDB::AddrType>* 
-BDBIDX::get_key_info(const char *key, size_t key_len, std::string &rec_content)
+BDBIDX::get_key_info(const char *key, size_t key_len, std::string const &rec_content)
 {
 	using namespace std;
+    using namespace boost::iostreams;
+    using BDB::AddrType;
+    using boost::tokenizer;
+    using boost::escaped_list_separator;
+    using boost::lexical_cast;
+   
+	set<AddrType> *keyinfo = new set<BDB::AddrType>;
+    
+    // turn rec_content into istream
+    filtering_istream arr_in;
+    arr_in.push(newline_filter(newline::posix));
+    arr_in.push(array_source(rec_content.c_str(), rec_content.size()));
 
+    string line;
+    typedef tokenizer<escaped_list_separator<char> > tokenizerT;
+    
+    // assme there are 3 token for each line where are
+    // key_len ',' key ',' address
+    while(getline(arr_in, line)) {
+        tokenizerT tok(line);
+        size_t cur_key_len;
+        AddrType cur_addr;
+        
+        tokenizerT::iterator i = tok.begin();
+        
+        cur_key_len = lexical_cast<size_t>(*i);
+        ++i;
+
+        if(0 != i->compare(0, cur_key_len, key, key_len))
+            continue;
+
+        if(i->size() != cur_key_len){
+            // TODO  data broken
+        }
+        ++i;
+        cur_addr = lexical_cast<AddrType>(*i);
+        keyinfo->insert(cur_addr);
+    }
+    
+    /*
 	size_t tmpos1 = 0;
 	size_t tmpos2 = 0;
 	size_t tmp_value = 0;
-	BDB::AddrType tmp_addr = -1;
-	auto_ptr<stringstream> ss(new stringstream(ios::in | ios::out | ios::binary));
-
-	string tmp_value_string = "";
-	set<BDB::AddrType> *keyinfo = new set<BDB::AddrType>;
+	AddrType tmp_addr = -1;
+	
+	set<AddrType> *keyinfo = new set<BDB::AddrType>;
+    //auto_ptr<stringstream> ss(new stringstream(ios::in | ios::out | ios::binary));
+	//string tmp_value_string = "";
+ 
 	while((tmpos2 = rec_content.find(",", tmpos1)) != string::npos){
-		tmp_value_string = rec_content.substr(tmpos1, tmpos2 - tmpos1);
+		
+        tmp_value_string = rec_content.substr(tmpos1, tmpos2 - tmpos1);
 		ss->str(tmp_value_string);
 		ss->clear();
 		ss->seekg(0, ios_base::beg);
 		*ss >> tmp_value;
+
 		tmpos1 = tmpos2 + 1;
+
 		if(rec_content.compare(tmpos1, tmp_value, key, key_len) == 0){
 			tmpos1 += tmp_value + 1;
 			tmpos2 = rec_content.find("\n", tmpos1);
@@ -470,6 +528,8 @@ BDBIDX::get_key_info(const char *key, size_t key_len, std::string &rec_content)
 			}
 		}
 	}
+    */
+
 	return keyinfo;
 }
 
