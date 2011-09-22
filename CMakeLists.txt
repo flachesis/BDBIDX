@@ -8,6 +8,8 @@ link_directories(${PROJECT_SOURCE_DIR})
 
 add_library(bdbidx BDBIDX.cpp)
 
+add_library(rec_db rec_db.cpp BDBIDX.cpp)
+
 add_executable (idx_test ${PROJECT_SOURCE_DIR}/main.cpp)
 target_link_libraries(idx_test bdbidx bdb boost_iostreams)
 
