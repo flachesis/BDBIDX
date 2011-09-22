@@ -32,6 +32,7 @@ db::put(std::string const& key, std::string const& data)
 bool
 db::get(std::string *output, std::string key)
 {
+    assert(0 != output && "string is not proper inited");
     std::set<BDB::AddrType> addrs;
     if(1 != idx_->get_value(key, &addrs))
         return false;
