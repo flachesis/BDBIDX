@@ -9,7 +9,7 @@ namespace rec_db {
 db::db(BDB::Config const& conf)
 {
     store_ = new BDB::BehaviorDB(conf);
-    idx_ = new BDBIDX(conf.root_dir);
+    idx_ = new BDBIDX("rec_idx");
 }
 
 db::~db()
