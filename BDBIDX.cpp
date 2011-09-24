@@ -106,7 +106,7 @@ void BDBIDX::init_bdbidx(
 		fread(file_content, 1, file_size, this->idx_saving_handle);
 		file_content[file_size] = '\0'; 
 		char *pch = strtok(file_content, "\n");
-		size_t tmp_value;
+		unsigned int tmp_value;
 		BDB::AddrType tmp_addr = -1;
 		while(pch != NULL){
 			sscanf(pch, "%u,%u", &tmp_value, &tmp_addr);
