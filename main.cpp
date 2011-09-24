@@ -20,6 +20,7 @@ struct Pool_hash : hashFunc{
 
 
 boost::mt19937 gen(std::time(NULL));
+size_t addr_count = 1000;
 
 int random_num(int min, int max);
 std::string random_key(size_t key_len);
@@ -28,9 +29,10 @@ bool test_run2(const char *dir_name);
 
 int main(int argc, char **argv){
 	if(argc != 3){
-		std::cerr << argv[0] << " db_dir1 db_dir2" << std::endl;
+		std::cerr << argv[0] << " db_dir test_rec_num\n [e.g.] " << argv[0] << " tmp 1000" << std::endl;
 		return 0;
 	}
+	addr_count = atoi(argv[2]);
 	std::cout << "test_run1 start!" << std::endl;
 	if(test_run1(argv[1])){
 		std::cout << "test_run1 success!" << std::endl;
@@ -38,7 +40,7 @@ int main(int argc, char **argv){
 		std::cerr << "test_run1 fail!" << std::endl;
 	}
 	std::cout << "test_run2 start!" << std::endl;
-	if(test_run2(argv[2])){
+	if(test_run2(argv[1])){
 		std::cout << "test_run2 success!" << std::endl;
 	}else{
 		std::cerr << "test_run2 fail!" << std::endl;
@@ -52,7 +54,6 @@ bool test_run2(const char *dir_name){
 	std::multimap<std::string, BDB::AddrType> key_value_map;
 	std::multimap<char, BDB::AddrType> key_list;
 	std::set<char> char_list;
-	size_t addr_count = 1000;
 	{
 		std::set<BDB::AddrType> addr_list;
 		{
@@ -126,7 +127,6 @@ bool test_run2(const char *dir_name){
 
 bool test_run1(const char *dir_name){
 	BDBIDX idx(dir_name);
-	size_t addr_count = 1000;
 	std::multimap<std::string, BDB::AddrType> key_value_map;
 	std::set<std::string> key_list;
 	{
