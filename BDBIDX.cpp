@@ -122,7 +122,7 @@ size_t BDBIDX::get_value(std::string key, std::set<BDB::AddrType> *addrs){
 }
 
 size_t BDBIDX::get_pool(std::string key, boost::unordered_multimap<std::string, BDB::AddrType> *addrs){
-	this->get_pool(key.c_str(), key.size(), addrs);
+	return this->get_pool(key.c_str(), key.size(), addrs);
 }
 
 bool BDBIDX::is_in(std::string key){
