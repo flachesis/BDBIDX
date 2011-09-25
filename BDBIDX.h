@@ -59,6 +59,7 @@ private:
 	boost::offset_separator *offsp;
 	boost::tokenizer<boost::offset_separator> *tok;
     
+	void replay_reduce();
     void init_bdbidx(const char *idx_dir, size_t key_hashing_table_size, hashFunc* hFn);
     std::set<BDB::AddrType>* get_key_info(const std::string &key, const std::string &rec_content);
     boost::unordered_multimap<std::string, BDB::AddrType>* get_key_info(const std::string &rec_content);

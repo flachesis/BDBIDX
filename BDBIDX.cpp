@@ -47,11 +47,27 @@ BDBIDX::BDBIDX(const char *idx_dir, size_t key_hashing_table_size, hashFunc* hFn
 
 
 BDBIDX::~BDBIDX() {
+	fclose(this->idx_saving_handle);
+	replay_reduce();
 	delete [] this->key_hashing_table;
 	delete this->bdb;
-	fclose(this->idx_saving_handle);
 	delete tok;
 	delete offsp;
+}
+
+void BDBIDX::replay_reduce(){
+	std::string idx_saving_file = this->idx_dir + "addr_idx.log.tmp";
+	FILE *idx_saving_handle_tmp = fopen(idx_saving_file.c_str(), "wb");
+	for(size_t idx_chunk_num = 0; idx_chunk_num < this->key_hashing_table_size; idx_chunk_num++){
+		if(this->key_hashing_table[idx_chunk_num] != -1){
+			chunk_addr_formater % idx_chunk_num % this->key_hashing_table[idx_chunk_num];
+			fwrite(chunk_addr_formater.str().c_str(), 1, chunk_addr_formater.str().size(), idx_saving_handle_tmp);
+		}
+	}
+	fclose(idx_saving_handle_tmp);
+	std::string idx_saving_file2 = this->idx_dir + "addr_idx.log";
+	remove(idx_saving_file2.c_str());
+	rename(idx_saving_file.c_str(), idx_saving_file2.c_str());
 }
 
 void BDBIDX::init_bdbidx(
