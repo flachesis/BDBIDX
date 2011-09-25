@@ -10,13 +10,8 @@
 
 #include <string>
 #include <set>
+#include <sstream>
 #include <boost/unordered_map.hpp>
-// DO NOT include external headers that are 
-// not required by this(BDBIDX.h) header
-//
-// #include <memory>
-// #include <sstream>
-// #include <cstring>
 #include <cstdio>
 #include "bdb/bdb.hpp"
 
@@ -55,6 +50,8 @@ private:
     BDB::BehaviorDB *bdb;
     BDB::AddrType *key_hashing_table;
     size_t key_hashing_table_size;
+	std::stringstream ss;
+	std::string rec;
     
     void init_bdbidx(const char *idx_dir, size_t key_hashing_table_size, hashFunc* hFn);
     std::set<BDB::AddrType>* get_key_info(const char *key, size_t key_len, std::string &rec_content);
