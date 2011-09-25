@@ -1,4 +1,5 @@
 #include <ctime>
+#include <cstring>
 #include <string>
 #include <iostream>
 #include <map>
@@ -33,17 +34,19 @@ int main(int argc, char **argv){
 		return 0;
 	}
 	addr_count = atoi(argv[2]);
-	std::cout << "test_run1 start!" << std::endl;
+	std::cerr << "test_run1 start!" << std::endl;
 	if(test_run1(argv[1])){
-		std::cout << "test_run1 success!" << std::endl;
+		std::cerr << "test_run1 success!" << std::endl;
 	}else{
 		std::cerr << "test_run1 fail!" << std::endl;
+		return 0;
 	}
-	std::cout << "test_run2 start!" << std::endl;
+	std::cerr << "test_run2 start!" << std::endl;
 	if(test_run2(argv[1])){
-		std::cout << "test_run2 success!" << std::endl;
+		std::cerr << "test_run2 success!" << std::endl;
 	}else{
 		std::cerr << "test_run2 fail!" << std::endl;
+		return 0;
 	}
 	return 0;
 }
@@ -126,44 +129,78 @@ bool test_run2(const char *dir_name){
 }
 
 bool test_run1(const char *dir_name){
-	BDBIDX idx(dir_name);
 	std::multimap<std::string, BDB::AddrType> key_value_map;
 	std::set<std::string> key_list;
 	{
-		std::set<BDB::AddrType> addr_list;
+		BDBIDX idx(dir_name);
 		{
-			std::pair<std::set<BDB::AddrType>::iterator, bool> it;
-			for(int i = 0; i < addr_count;){
-				it = addr_list.insert(random_num(1, 49999999));
-				if(it.second == false){
-					continue;
+			std::set<BDB::AddrType> addr_list;
+			{
+				std::pair<std::set<BDB::AddrType>::iterator, bool> it;
+				for(int i = 0; i < addr_count;){
+					it = addr_list.insert(random_num(1, 49999999));
+					if(it.second == false){
+						continue;
+					}
+					i++;
 				}
-				i++;
+			}
+			std::string tmp_key;
+			std::set<BDB::AddrType>::iterator it;
+			for(it = addr_list.begin(); it != addr_list.end(); it++){
+				tmp_key = random_key(random_num(3, 5));
+				key_value_map.insert(std::pair<std::string, BDB::AddrType>(tmp_key, *it));
+				key_list.insert(tmp_key);
 			}
 		}
-		std::string tmp_key;
-		std::set<BDB::AddrType>::iterator it;
-		for(it = addr_list.begin(); it != addr_list.end(); it++){
-			tmp_key = random_key(random_num(3, 5));
-			key_value_map.insert(std::pair<std::string, BDB::AddrType>(tmp_key, *it));
-			key_list.insert(tmp_key);
-		}
-	}
-	{
-		bool is_nonerror = true;
-		std::multimap<std::string, BDB::AddrType>::iterator it;
-		std::cerr << "put start!" << std::endl;
-		for(it = key_value_map.begin(); it != key_value_map.end(); it++){
-			is_nonerror = idx.put_key(it->first, it->second);
-			if(!is_nonerror){
-				std::cerr << "test_run1_error: put key-> " << it->first << ", put value-> " << it->second << std::endl;
-				return false;
+		{
+			bool is_nonerror = true;
+			std::multimap<std::string, BDB::AddrType>::iterator it;
+			std::cerr << "put start!" << std::endl;
+			for(it = key_value_map.begin(); it != key_value_map.end(); it++){
+				is_nonerror = idx.put_key(it->first, it->second);
+				if(!is_nonerror){
+					std::cerr << "test_run1_error: put key-> " << it->first << ", put value-> " << it->second << std::endl;
+					return false;
+				}
 			}
+			std::cerr << "put finish!" << std::endl;
 		}
-		std::cerr << "put finish!" << std::endl;
+		{
+			std::cerr << "get value test start!" << std::endl;
+			std::set<std::string>::iterator it;
+			std::pair<std::multimap<std::string, BDB::AddrType>::iterator, std::multimap<std::string, BDB::AddrType>::iterator> ret;
+			std::multimap<std::string, BDB::AddrType>::iterator it2;
+			std::auto_ptr<std::set<BDB::AddrType> > addrs(new std::set<BDB::AddrType>);
+			size_t addrs_num;
+			size_t count = 0;
+			for(it = key_list.begin(); it != key_list.end(); it++){
+				addrs_num = idx.get_value(*it, addrs.get());
+				if(addrs_num == -1){
+					std::cerr << "test_run1_error: get error. get key-> " << *it << std::endl;
+					return false;
+				}
+				ret = key_value_map.equal_range(*it);
+				count = 0;
+				for(it2=ret.first; it2!=ret.second; ++it2){
+					count++;
+					if(addrs->find(it2->second) == addrs->end()){
+						std::cerr << "test_run1_error: addr lost. put key-> " << *it << ", put addr-> " << it2->second << std::endl;
+						return false;
+					}
+				}
+				if(count != addrs->size()){
+					std::cerr << "test_run1_error: size not match!" << std::endl;
+					return false;
+				}
+				addrs->clear();
+			}
+			std::cerr << "get value test finish!" << std::endl;
+		}
 	}
+	BDBIDX idx(dir_name);
 	{
-		std::cerr << "get value test start!" << std::endl;
+		std::cerr << "replay test start!" << std::endl;
 		std::set<std::string>::iterator it;
 		std::pair<std::multimap<std::string, BDB::AddrType>::iterator, std::multimap<std::string, BDB::AddrType>::iterator> ret;
 		std::multimap<std::string, BDB::AddrType>::iterator it2;
@@ -191,7 +228,7 @@ bool test_run1(const char *dir_name){
 			}
 			addrs->clear();
 		}
-		std::cerr << "get value test finish!" << std::endl;
+		std::cerr << "replay test finish!" << std::endl;
 	}
 	{
 		std::cerr << "del (key, addr) pair test start!" << std::endl;
