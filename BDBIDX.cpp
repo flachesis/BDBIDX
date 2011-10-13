@@ -158,8 +158,8 @@ bool BDBIDX::put_key(const std::string &key, const BDB::AddrType &addr){
 	if(already_reading == -1){
 		return false;
 	}
-	
-	auto_ptr<set<BDB::AddrType> > keyinfo(this->get_key_info(key, rec));
+	auto_ptr<set<BDB::AddrType> > keyinfo(new set<BDB::AddrType>);
+	this->get_key_info(key, rec, keyinfo.get());
 	if(keyinfo->find(addr) != keyinfo->end()){
 		return true;
 	}
@@ -290,9 +290,7 @@ size_t BDBIDX::get_value(const std::string &key, std::set<BDB::AddrType> *addrs)
 	if(already_reading == -1){
 		return 0;
 	}
-	std::set<BDB::AddrType> *tmp_addrs = this->get_key_info(key, rec);
-	*addrs = *tmp_addrs;
-	delete tmp_addrs;
+	this->get_key_info(key, rec, addrs);
 	return addrs->size();
 }
 
@@ -306,9 +304,7 @@ size_t BDBIDX::get_pool(const std::string &key, boost::unordered_multimap<std::s
 	if(already_reading == -1){
 		return 0;
 	}
-	boost::unordered_multimap<std::string, BDB::AddrType> *tmp_addrs = this->get_key_info(rec);
-	*addrs = *tmp_addrs;
-	delete tmp_addrs;
+	this->get_key_info(rec, addrs);
 	return addrs->size();
 }
 
@@ -356,7 +352,7 @@ bool BDBIDX::is_in(const char *key, size_t key_len){
 	return this->is_in(key);
 }
 
-boost::unordered_multimap<std::string, BDB::AddrType>* BDBIDX::get_key_info(const std::string &rec_content){
+void BDBIDX::get_key_info(const std::string &rec_content, boost::unordered_multimap<std::string, BDB::AddrType> *addrs){
 
 	using namespace std;
 	
@@ -366,7 +362,7 @@ boost::unordered_multimap<std::string, BDB::AddrType>* BDBIDX::get_key_info(cons
 	string::const_iterator it = rec_content.begin();
 	boost::tokenizer<boost::offset_separator>::iterator it2;
 	string key;
-	boost::unordered_multimap<string, BDB::AddrType> *keyinfo = new boost::unordered_multimap<string, BDB::AddrType>;
+	addrs->clear();
 	while(it < rec_content.end()){
 		tok->assign(it, it + 16, *offsp);
 		it2 = tok->begin();
@@ -379,14 +375,12 @@ boost::unordered_multimap<std::string, BDB::AddrType>* BDBIDX::get_key_info(cons
 		ss >> hex >> key_len;
 		it += 16 + key_len;
 		pos += 16;
-		keyinfo->insert(pair<string, BDB::AddrType>(rec_content.substr(pos, key_len), tmp_addr));
+		addrs->insert(pair<string, BDB::AddrType>(rec_content.substr(pos, key_len), tmp_addr));
 		pos += key_len;
 	}
-	return keyinfo;
 }
 
-std::set<BDB::AddrType>* 
-BDBIDX::get_key_info(const std::string &key, const std::string &rec_content)
+void BDBIDX::get_key_info(const std::string &key, const std::string &rec_content, std::set<BDB::AddrType> *addrs)
 {
 	using namespace std;
 	
@@ -395,7 +389,7 @@ BDBIDX::get_key_info(const std::string &key, const std::string &rec_content)
 	size_t pos = 0;
 	string::const_iterator it = rec_content.begin();
 	boost::tokenizer<boost::offset_separator>::iterator it2;
-	set<BDB::AddrType> *keyinfo = new set<BDB::AddrType>;
+	addrs->clear();
 	while(it < rec_content.end()){
 		tok->assign(it, it + 16, *offsp);
 		it2 = tok->begin();
@@ -409,9 +403,8 @@ BDBIDX::get_key_info(const std::string &key, const std::string &rec_content)
 		it += 16 + key_len;
 		pos += 16;
 		if(rec_content.compare(pos, key_len, key) == 0){
-			keyinfo->insert(tmp_addr);
+			addrs->insert(tmp_addr);
 		}
 		pos += key_len;
 	}
-	return keyinfo;
 }
