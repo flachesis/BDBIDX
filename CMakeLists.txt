@@ -3,8 +3,15 @@ cmake_minimum_required(VERSION 2.8)
 
 add_subdirectory( BehaviorDB )
 
-include_directories( ${PROJECT_SOURCE_DIR} /usr/local/include BehaviorDB)
-link_directories(${PROJECT_SOURCE_DIR} /usr/local/lib)
+set (Boost_ADDITIONAL_VERSIONS "1.47" "1.47.0" )
+find_package ( Boost 1.45.0 )
+
+if(Boost_FOUND)
+  include_directories(${Boost_INCLUDE_DIRS})
+endif()
+
+include_directories( ${PROJECT_SOURCE_DIR} BehaviorDB)
+link_directories(${PROJECT_SOURCE_DIR} )
 
 add_library(bdbidx BDBIDX.cpp)
 
