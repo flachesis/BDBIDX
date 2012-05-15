@@ -22,7 +22,7 @@ struct default_hash : hashFunc
 		size_t i = 0;
 		while (i < len)
 		{
-			hash = ((hash << 7) + 3) + key[i];
+			hash = ((hash << 7) + (hash << 1) + hash) + key[i];
 			i++;
 		}
 		return hash;
