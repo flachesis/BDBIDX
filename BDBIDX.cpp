@@ -18,7 +18,7 @@ struct default_hash : hashFunc
   size_t
   operator()(char const *key, size_t len) const
   {
-    size_t hash = 0;
+    uint32_t hash = 0;
     uint32_t i = 0;
     while (i < len)
     {
