@@ -143,9 +143,10 @@ bool BDBIDX::put_key(const std::string &key, const BDB::AddrType &addr){
 
   if(this->key_hashing_table[idx_chunk_num] == -1){
     key_addr_formater % addr % key.length() % key;
-    this->key_hashing_table[idx_chunk_num] = this->bdb->put(key_addr_formater.str());
-    if(this->key_hashing_table[idx_chunk_num] == -1){
-      return false;
+    try{
+      this->key_hashing_table[idx_chunk_num] = this->bdb->put(key_addr_formater.str());
+    }catch(...){
+      this->key_hashing_table[idx_chunk_num] == -1;
     }
     chunk_addr_formater % idx_chunk_num % this->key_hashing_table[idx_chunk_num];
     fwrite(chunk_addr_formater.str().c_str(), 1, chunk_addr_formater.str().size(), this->idx_saving_handle);
@@ -154,8 +155,9 @@ bool BDBIDX::put_key(const std::string &key, const BDB::AddrType &addr){
   }
   
   rec.clear();
-  size_t already_reading = this->bdb->get(&rec, -1, this->key_hashing_table[idx_chunk_num], 0);
-  if(already_reading == -1){
+  try{
+    this->bdb->get(&rec, -1, this->key_hashing_table[idx_chunk_num], 0);
+  }catch(...){
     return false;
   }
   auto_ptr<set<BDB::AddrType> > keyinfo(new set<BDB::AddrType>);
@@ -177,8 +179,9 @@ bool BDBIDX::del_key(const std::string &key){
   }
 
   rec.clear();
-  size_t already_reading = this->bdb->get(&rec, -1, this->key_hashing_table[idx_chunk_num], 0);
-  if(already_reading == -1){
+  try{
+    this->bdb->get(&rec, -1, this->key_hashing_table[idx_chunk_num], 0);
+  }catch(...){
     return false;
   }
 
@@ -231,8 +234,9 @@ bool BDBIDX::del_key(const std::string &key, const BDB::AddrType &addr){
     return true;
   }
   rec.clear();
-  size_t already_reading = this->bdb->get(&rec, -1, this->key_hashing_table[idx_chunk_num], 0);
-  if(already_reading == -1){
+  try{
+    this->bdb->get(&rec, -1, this->key_hashing_table[idx_chunk_num], 0);
+  }catch(...){
     return false;
   }
   
@@ -286,8 +290,9 @@ size_t BDBIDX::get_value(const std::string &key, std::set<BDB::AddrType> *addrs)
     return 0;
   }
   rec.clear();
-  size_t already_reading = this->bdb->get(&rec, -1, this->key_hashing_table[idx_chunk_num], 0);
-  if(already_reading == -1){
+  try{
+    this->bdb->get(&rec, -1, this->key_hashing_table[idx_chunk_num], 0);
+  }catch(...){
     return 0;
   }
   this->get_key_info(key, rec, addrs);
