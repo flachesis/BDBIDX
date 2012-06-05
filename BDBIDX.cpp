@@ -215,7 +215,9 @@ bool BDBIDX::del_key(const std::string &key){
     chunk_addr_formater % idx_chunk_num % tmp_addr;
     fwrite(chunk_addr_formater.str().c_str(), 1, chunk_addr_formater.str().size(), this->idx_saving_handle);
     fflush(this->idx_saving_handle);
-    if(this->bdb->del(this->key_hashing_table[idx_chunk_num]) == -1){
+    try{
+      this->bdb->del(this->key_hashing_table[idx_chunk_num]);
+    }catch(...){
       this->key_hashing_table[idx_chunk_num] = -1;
       return false;
     }
@@ -273,7 +275,9 @@ bool BDBIDX::del_key(const std::string &key, const BDB::AddrType &addr){
     chunk_addr_formater % idx_chunk_num % tmp_addr;
     fwrite(chunk_addr_formater.str().c_str(), 1, chunk_addr_formater.str().size(), this->idx_saving_handle);
     fflush(this->idx_saving_handle);
-    if(this->bdb->del(this->key_hashing_table[idx_chunk_num]) == -1){
+    try{
+      this->bdb->del(this->key_hashing_table[idx_chunk_num])
+    }catch(...){
       this->key_hashing_table[idx_chunk_num] = -1;
       return false;
     }
@@ -305,8 +309,9 @@ size_t BDBIDX::get_pool(const std::string &key, boost::unordered_multimap<std::s
     return 0;
   }
   rec.clear();
-  size_t already_reading = this->bdb->get(&rec, -1, this->key_hashing_table[idx_chunk_num], 0);
-  if(already_reading == -1){
+  try{
+    this->bdb->get(&rec, -1, this->key_hashing_table[idx_chunk_num], 0);
+  }catch(...){
     return 0;
   }
   this->get_key_info(rec, addrs);
