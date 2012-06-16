@@ -276,7 +276,7 @@ bool BDBIDX::del_key(const std::string &key, const BDB::AddrType &addr){
     fwrite(chunk_addr_formater.str().c_str(), 1, chunk_addr_formater.str().size(), this->idx_saving_handle);
     fflush(this->idx_saving_handle);
     try{
-      this->bdb->del(this->key_hashing_table[idx_chunk_num])
+      this->bdb->del(this->key_hashing_table[idx_chunk_num]);
     }catch(...){
       this->key_hashing_table[idx_chunk_num] = -1;
       return false;
