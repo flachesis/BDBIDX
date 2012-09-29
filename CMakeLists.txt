@@ -19,8 +19,12 @@ target_link_libraries (bdbidx bdb)
 
 #add_library(rec_db rec_db.cpp BDBIDX.cpp)
 
-add_executable (idx_test ${PROJECT_SOURCE_DIR}/main.cpp)
-target_link_libraries(idx_test bdbidx bdb)
+option( BDBIDX_BUILD_TEST "Build tests" OFF )
+
+if( BDBIDX_BUILD_TEST )
+  add_executable (idx_test ${PROJECT_SOURCE_DIR}/main.cpp)
+  target_link_libraries(idx_test bdbidx)
+endif()
 
 install (FILES BDBIDX.h DESTINATION include/BDBIDX)
 #install (TARGETS bdbidx DESTINATION lib EXPORT bdbidx-targets )
