@@ -141,17 +141,18 @@ bool BDBIDX::put_key(const std::string &key, const BDB::AddrType &addr){
 
   size_t idx_chunk_num = (*BKDRHash)(key.c_str(), key.length()) % this->key_hashing_table_size;
 
-  if(this->key_hashing_table[idx_chunk_num] == -1){
-    key_addr_formater % addr % key.length() % key;
-    try{
+  try{
+    if(this->key_hashing_table[idx_chunk_num] == -1){
+      key_addr_formater % addr % key.length() % key;
       this->key_hashing_table[idx_chunk_num] = this->bdb->put(key_addr_formater.str());
-    }catch(...){
-      this->key_hashing_table[idx_chunk_num] = -1;
+      //this->key_hashing_table[idx_chunk_num] = -1;
+      chunk_addr_formater % idx_chunk_num % this->key_hashing_table[idx_chunk_num];
+      fwrite(chunk_addr_formater.str().c_str(), 1, chunk_addr_formater.str().size(), this->idx_saving_handle);
+      fflush(this->idx_saving_handle);
+      return true;
     }
-    chunk_addr_formater % idx_chunk_num % this->key_hashing_table[idx_chunk_num];
-    fwrite(chunk_addr_formater.str().c_str(), 1, chunk_addr_formater.str().size(), this->idx_saving_handle);
-    fflush(this->idx_saving_handle);
-    return true;
+  }catch(...){
+    return false;
   }
   
   rec.clear();
