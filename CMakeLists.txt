@@ -2,12 +2,13 @@ project (BDBIDX)
 cmake_minimum_required(VERSION 2.8)
 
 add_subdirectory( BehaviorDB )
+include (BehaviorDB/use_c++11.cmake)
 
 include_directories( ${PROJECT_SOURCE_DIR} BehaviorDB)
 link_directories(${PROJECT_SOURCE_DIR} )
 
-set (Boost_ADDITIONAL_VERSIONS "1.47" "1.47.0" )
-find_package ( Boost 1.45.0 )
+set (Boost_ADDITIONAL_VERSIONS "1.52" "1.52.0" )
+find_package ( Boost 1.52.0 )
 
 if(Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})

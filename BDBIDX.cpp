@@ -47,10 +47,11 @@ BDBIDX::BDBIDX(const char *idx_dir, size_t key_hashing_table_size, hashFunc* hFn
 
 
 BDBIDX::~BDBIDX() {
-  fclose(this->idx_saving_handle);
+  fflush(idx_saving_handle);
+  fclose(idx_saving_handle);
   replay_reduce();
-  delete [] this->key_hashing_table;
-  delete this->bdb;
+  delete [] key_hashing_table;
+  delete bdb;
   delete tok;
   delete offsp;
 }
